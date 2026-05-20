@@ -24,8 +24,42 @@ void save_ranking(char[], int, int);
 void show_ranking();
 
 int main(void) {
+  int level_cnt = -1;
+  int row = 0;
+  char line[SIZE];
+  char maps[MAX_LEVEL][SIZE][SIZE];
+  for(int i = 0; i < MAX_LEVEL; i++){
+    for(int j = 0; j < SIZE; j++){
+      for(int k = 0; k < SIZE; k++){
+        maps[i][j][k] = '\0';
+      }
+    }
+  }
+  FILE *map_file; 
+  map_file = fopen("map.txt", "r");
+  if(map_file == NULL){
+    printf("map.txt 파일을 열 수 없습니다.\n");
+    return 0;
+  }
+  
+  while(fscanf(map_file, "%s", line)){
+    if(line[0] == 's' && line[1] == '\0'){
+      level_cnt++;
+      row = 0;
+    }
+    else if(line[0] == 'e' && line[1] == '\0') break;
+    else{
+      for(int i = 0; line[i] != '\0'; i++){
+        maps[level_cnt][row][i] = (line[i] == '.') ? ' ' : line[i]; // 맵 파일에서 '.'은 공백으로 바꿈
+      }
+      row++;
+    }
+  }
+  
+  fclose(map_file);
+  /*
   char maps[MAX_LEVEL][SIZE][SIZE] = {{
-                                          /* "    #####          ",
+                                              "    #####          ",
                                               "    #   #          ",
                                               "    #$  #          ",
                                               "  ###  $##         ",
@@ -35,7 +69,7 @@ int main(void) {
                                               "# $  $          OO#",
                                               "##### ### #@##  OO#",
                                               "    #     #########",
-                                              "    #######        ",*/
+                                              "    #######        ",
                                           "#######",
                                           "#@    #",
                                           "#  $  #",
@@ -67,7 +101,8 @@ int main(void) {
                                           "##OOO    $  $   #",
                                           "#OOOO  ##########",
                                           "########         ",
-                                      }};
+                                      }};*/
+                                      
 
   // >>> validate map >>>
   for (int k = 0; k < MAX_LEVEL; k++) {
