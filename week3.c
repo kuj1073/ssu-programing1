@@ -36,7 +36,7 @@ int main(void) {
     }
   }
   FILE *map_file; 
-  map_file = fopen("map.txt", "r");
+  map_file = fopen("map1.txt", "r"); //테스트 위해 map1.txt로 써둠
   if(map_file == NULL){
     printf("map.txt 파일을 열 수 없습니다.\n");
     return 0;
@@ -55,54 +55,7 @@ int main(void) {
       row++;
     }
   }
-  
   fclose(map_file);
-  /*
-  char maps[MAX_LEVEL][SIZE][SIZE] = {{
-                                              "    #####          ",
-                                              "    #   #          ",
-                                              "    #$  #          ",
-                                              "  ###  $##         ",
-                                              "  #  $ $ #         ",
-                                              "### # ## #   ######",
-                                              "#   # ## #####  OO#",
-                                              "# $  $          OO#",
-                                              "##### ### #@##  OO#",
-                                              "    #     #########",
-                                              "    #######        ",
-                                          "#######",
-                                          "#@    #",
-                                          "#  $  #",
-                                          "#  O  #",
-                                          "#  $  #",
-                                          "#  O  #",
-                                          "#######",
-                                      },
-                                      {
-                                          "############  ",
-                                          "#OO  #     ###",
-                                          "#OO  # $  $  #",
-                                          "#OO  #$####  #",
-                                          "#OO    @ ##  #",
-                                          "#OO  # #  $ ##",
-                                          "###### ##$ $ #",
-                                          "  # $  $ $ $ #",
-                                          "  #    #     #",
-                                          "  ############",
-                                      },
-                                      {
-                                          "        ######## ",
-                                          "        #     @# ",
-                                          "        # $#$ ## ",
-                                          "        # $  $#  ",
-                                          "        ##$ $ #  ",
-                                          "######### $ # ###",
-                                          "#OOOO  ## $  $  #",
-                                          "##OOO    $  $   #",
-                                          "#OOOO  ##########",
-                                          "########         ",
-                                      }};*/
-                                      
 
   // >>> validate map >>>
   for (int k = 0; k < MAX_LEVEL; k++) {
@@ -116,23 +69,20 @@ int main(void) {
   char option;
   char name[4];
   int playing_level;
+  bool is_loading = false;
 
   show_initial_screen();
   show_option_screen();
   scanf("%c", &option);
   option = tolower(option);
-  show_name_screen();
-  scanf("%s", name);
-  flush_stdin_line();
 
   switch (option) {
     case 'n':
       playing_level = 0;
       break;
     case 'f':
-      // TODO
+      is_loading = true;
       break;
-      return 0;
     case '1':
     case '2':
     case '3':
@@ -141,6 +91,11 @@ int main(void) {
   }
   // >>> play에서 필요한 변수들 (SET_PLAYING_MAP_BY_PLAYING_LEVEL 에서 사용하는
   // 변수들) >>>
+  if(!is_loading){
+    show_name_screen();
+    scanf("%s", name);
+    flush_stdin_line();
+  }
   char playing_map[SIZE][SIZE];
   bool box_dest_map[SIZE][SIZE];
   int fitted_map_width, fitted_map_height;
@@ -182,7 +137,56 @@ int main(void) {
   bool is_end_recording = false;
   bool is_play = false;
   bool is_exit = false;
+  bool is_saving = false;
+  bool is_saved = false;
+  bool is_loaded = false;
   // <<< 기타 명령어나 참고 메시지에 필요한 변수들 <<<
+  if(is_loading){
+    /*
+    name
+    playing_level
+    moves_cnt
+    player_y
+    player_x
+    left_box_cnt
+    playing_map 
+    */
+    FILE *soko_file;
+    soko_file = fopen("soko.txt", "r");
+    if (soko_file != NULL) {
+      fscanf(soko_file, "%s", name);
+      fscanf(soko_file, "%d", &playing_level);
+      fscanf(soko_file, "%d", &moves_cnt);
+      fscanf(soko_file, "%d", &player_y);
+      fscanf(soko_file, "%d", &player_x);
+      fscanf(soko_file, "%d", &left_box_cnt);
+
+      for (int i = 0; i < SIZE; i++)
+      if (maps[playing_level][0][i] == '\0') {
+        fitted_map_width = i;
+        break;
+      }
+      for (int i = 0; i < SIZE; i++)
+        if (maps[playing_level][i][0] == '\0') {
+          fitted_map_height = i;
+          break;
+        }
+      for (int i = 0; i < fitted_map_height; i++) {
+        for (int j = 0; j < fitted_map_width; j++) {
+          fscanf(soko_file, " %c", &playing_map[i][j]);
+          if(playing_map[i][j] == '.') playing_map[i][j] = ' ';
+        }  
+      }
+    }
+    fclose(soko_file);
+    for (int i = 0; i < fitted_map_height; i++)
+      for (int j = 0; j < fitted_map_width; j++)
+          box_dest_map[i][j] = (maps[playing_level][i][j] == 'O') ? true : false;
+    is_loading = false;
+    op = ' ';
+    is_loaded = true;
+    goto GAME_LOOP;
+  }   
 
 SET_PLAYING_MAP_BY_PLAYING_LEVEL:
   // >>> maps -> playing_map copy & player 위치 준비 >>>
@@ -226,6 +230,7 @@ SET_PLAYING_MAP_BY_PLAYING_LEVEL:
     }
   }
   // <<< maps -> playing_map copy & player 위치 준비 <<<
+GAME_LOOP:
   while (op != EOF) {
     system("clear");
     if (is_showing_help) {
@@ -260,6 +265,12 @@ SET_PLAYING_MAP_BY_PLAYING_LEVEL:
     } else if (is_stop_recording) {
       is_stop_recording = false;
       printf("stop recording\n");
+    } else if (is_saved) {
+      is_saved = false;
+      printf("Saved\n");
+    } else if (is_loaded) {
+      is_loaded = false;
+      printf("Loaded\n");
     } else {  // 참고메시지 때문에 UI가 위아래로 움직이는 문제 해결하기 위해
       printf("\n");
     }
@@ -345,6 +356,44 @@ SET_PLAYING_MAP_BY_PLAYING_LEVEL:
         show_ranking();
         sleep(3);
         break;
+      case 's':
+        is_saving = true;
+        break;
+      case 'f': {
+        FILE *soko_file;
+        soko_file = fopen("soko.txt", "r");
+        if (soko_file != NULL) {
+          fscanf(soko_file, "%s", name);
+          fscanf(soko_file, "%d", &playing_level);
+          fscanf(soko_file, "%d", &moves_cnt);
+          fscanf(soko_file, "%d", &player_y);
+          fscanf(soko_file, "%d", &player_x);
+          fscanf(soko_file, "%d", &left_box_cnt);
+
+          for (int i = 0; i < SIZE; i++)
+          if (maps[playing_level][0][i] == '\0') {
+            fitted_map_width = i;
+            break;
+          }
+          for (int i = 0; i < SIZE; i++)
+            if (maps[playing_level][i][0] == '\0') {
+              fitted_map_height = i;
+              break;
+            }
+          for (int i = 0; i < fitted_map_height; i++) {
+            for (int j = 0; j < fitted_map_width; j++) {
+              fscanf(soko_file, " %c", &playing_map[i][j]);
+              if(playing_map[i][j] == '.') playing_map[i][j] = ' ';
+            }  
+          }
+        }
+        fclose(soko_file);
+        for (int i = 0; i < fitted_map_height; i++)
+          for (int j = 0; j < fitted_map_width; j++)
+              box_dest_map[i][j] = (maps[playing_level][i][j] == 'O') ? true : false;
+        is_loaded = true;
+        continue;
+      }
     }
     // <<< user 입력 <<<
 
@@ -352,7 +401,37 @@ SET_PLAYING_MAP_BY_PLAYING_LEVEL:
     if (is_exit) {
       printf("Good bye\n");
       return 0;
-    } else if (dx != 0 || dy != 0) {  // >>> 이동 조작키를 눌렀을 때 >>>
+    } 
+    else if(is_saving){
+      /*
+      name
+      playing_level
+      moves_cnt
+      player_y
+      player_x
+      left_box_cnt
+      playing_map 
+      */
+      FILE *soko_file;
+      soko_file = fopen("soko.txt", "w");
+      fprintf(soko_file, "%s\n", name);
+      fprintf(soko_file, "%d\n", playing_level);
+      fprintf(soko_file, "%d\n", moves_cnt);
+      fprintf(soko_file, "%d\n", player_y);
+      fprintf(soko_file, "%d\n", player_x);
+      fprintf(soko_file, "%d\n", left_box_cnt);
+      for (int i = 0; i < fitted_map_height; i++) {
+        for (int j = 0; j < fitted_map_width; j++) {
+          if(playing_map[i][j] == ' ') fprintf(soko_file, "%c", '.'); 
+          else fprintf(soko_file, "%c", playing_map[i][j]);
+        }
+        fprintf(soko_file, "\n");
+      }
+      fclose(soko_file);
+      is_saving = false;
+      is_saved = true;
+    }
+    else if (dx != 0 || dy != 0) {  // >>> 이동 조작키를 눌렀을 때 >>>
       int ny = player_y + dy;
       int nx = player_x + dx;
       if (playing_map[ny][nx] == '#') continue;
