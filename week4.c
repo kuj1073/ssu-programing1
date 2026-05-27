@@ -71,11 +71,9 @@ int main(void) {
     }
     option = tolower(option_str[0]);
     if (option == 'f') {
-        flush_stdin_line();
         load_on_start = true;
         break;
     } else if (option == 'n') {
-        flush_stdin_line();
         input_name(name);
         playing_level = 0;
         break;
